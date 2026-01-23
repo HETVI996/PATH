@@ -1,0 +1,16 @@
+pandas 
+numpy 
+matplotlib
+scikit-learn
+seaborn
+catboost
+xgboost
+dill
+flask 
+gunicorn
+transformers
+torch
+tensorflow
+joblib
+
+# -e.
