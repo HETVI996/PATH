@@ -212,3 +212,23 @@ student_astro_980_profiles_unique.csv
 
 ## Questions
 Path questions.txt
+
+check.ipynb
+
+# ML artifacts
+artifacts/
+*.pkl
+
+# Logs
+logs/
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+env/
+
+# OS files
+.DS_Store
