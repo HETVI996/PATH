@@ -78,7 +78,7 @@ class DataTransformation:
             logging.info(f"Train data shape: {train_df.shape}")
             logging.info(f"Test data shape: {test_df.shape}")
 
-            target_column = "Career_Fe"
+            target_column = "Career_Feel"
 
             # Separate target
             X_train = train_df.drop(columns=[target_column])
