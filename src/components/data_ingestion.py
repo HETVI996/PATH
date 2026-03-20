@@ -24,7 +24,7 @@ class DataIngestion:
         
         try:
             # Reading the data from source
-            df = pd.read_csv("notebook/data/career_data.csv")
+            df = pd.read_csv("student_astro_980_profiles_unique.csv")
             
             logging.info("Dataset read successfully")
             
