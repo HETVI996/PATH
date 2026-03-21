@@ -9,11 +9,15 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import FunctionTransformer
 
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import save_object
 
+
+def convert_1d(x):
+    return x.iloc[:, 0].astype(str)
 
 @dataclass
 class DataTransformationConfig:
@@ -43,21 +47,20 @@ class DataTransformation:
             )
 
             # Text pipeline
-            text_pipeline = Pipeline(
-                steps=[
-                    ("imputer", SimpleImputer(strategy="constant", fill_value="")),
-                    ("tfidf", TfidfVectorizer(
-                        stop_words="english",
-                        max_features=5000,
-                        ngram_range=(1, 2)
-                    ))
-                ]
-            )
-
+            text_pipeline = Pipeline(steps = [
+                ("to_1d", FunctionTransformer(convert_1d, validate=False)),
+                ("tfidf", TfidfVectorizer(
+                    stop_words="english",
+                    max_features=5000,
+                    ngram_range=(1, 2)
+                ))
+            ])
+            
+            
             preprocessor = ColumnTransformer(
                 transformers=[
                     ("num_pipeline", num_pipeline, numeric_columns),
-                    ("text_pipeline", text_pipeline, "text_column")
+                    ("text_pipeline", text_pipeline, ["text_column"])
                 ],
                 remainder="drop"
             )
@@ -93,7 +96,7 @@ class DataTransformation:
             logging.info(f"Numeric columns: {numeric_columns}")
 
             # Combine text columns
-            text_columns = ["Pride_Proj", "Hobbies", "Energy"]
+            text_columns = ["Pride_Project", "Hobbies", "Energy"]
 
             X_train["text_column"] = X_train[text_columns].astype(str).agg(" ".join, axis=1)
             X_test["text_column"] = X_test[text_columns].astype(str).agg(" ".join, axis=1)
@@ -110,7 +113,7 @@ class DataTransformation:
             # Save preprocessor
             save_object(
                 file_path=self.transformation_config.preprocessor_obj_file_path,
-                obj=preprocessor_obj
+                object=preprocessor_obj
             )
 
             logging.info(
@@ -119,8 +122,8 @@ class DataTransformation:
 
             return (
                 X_train_transformed,
-                X_test_transformed,
                 y_train,
+                X_test_transformed,
                 y_test
             )
 
