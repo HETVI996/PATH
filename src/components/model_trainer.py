@@ -23,7 +23,7 @@ class ModelTrainer:
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
         
-    def initiate_model_trainer(self, X_train, y_train, X_test, y_test):
+    def initiate_model_training(self, X_train, y_train, X_test, y_test):
         
         try:
             logging.info("Strarting model training")
@@ -64,7 +64,7 @@ class ModelTrainer:
                 
                 save_object(
                     file_path=self.model_trainer_config.trained_model_file_path,
-                    obj=best_model
+                    object=best_model
                 )
                 
                 logging.info("Model training completed and model saved")
