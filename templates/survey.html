@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PATH — Survey</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --ink:    #0f0e0c;
+    --paper:  #f8f5ef;
+    --accent: #2d6a4f;
+    --gold:   #c9a84c;
+    --muted:  #6b6860;
+    --card:   #ffffff;
+    --border: #e0ddd5;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+
+  /* ── Header ── */
+  header {
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .progress-wrap { flex: 1; margin: 0 2rem; }
+  .progress-bar-bg {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width .4s ease;
+    width: 0%;
+  }
+  .progress-label {
+    font-size: .75rem;
+    color: var(--muted);
+    margin-top: .3rem;
+    text-align: right;
+  }
+
+  /* ── Form layout ── */
+  form { max-width: 700px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+  .q-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    transition: box-shadow .2s;
+  }
+  .q-block:focus-within { box-shadow: 0 0 0 2px var(--accent); }
+
+  .q-meta {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .8rem;
+  }
+  .q-num {
+    font-size: .7rem;
+    font-weight: 500;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 2rem;
+    padding: .15rem .55rem;
+    letter-spacing: .05em;
+  }
+  .q-title {
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .q-text {
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+  }
+
+  /* ── Radio options ── */
+  .options { display: flex; flex-direction: column; gap: .55rem; }
+  .option {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    cursor: pointer;
+    padding: .65rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    transition: border-color .15s, background .15s;
+  }
+  .option:hover { border-color: var(--accent); background: #f0f7f4; }
+  .option input[type=radio] { display: none; }
+  .option-dot {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s;
+  }
+  .option-dot::after {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transform: scale(0);
+    transition: opacity .15s, transform .15s;
+  }
+  .option input[type=radio]:checked ~ .option-dot { border-color: var(--accent); }
+  .option input[type=radio]:checked ~ .option-dot::after { opacity: 1; transform: scale(1); }
+  .option.selected { border-color: var(--accent); background: #f0f7f4; }
+  .option-label { font-size: .95rem; line-height: 1.4; }
+
+  /* ── Likert scale ── */
+  .likert-wrap { display: flex; flex-direction: column; gap: .5rem; }
+  .likert-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: .75rem;
+    color: var(--muted);
+  }
+  .likert-track {
+    display: flex;
+    gap: .4rem;
+    align-items: center;
+  }
+  .likert-btn {
+    flex: 1;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: .35rem;
+    background: #fff;
+    cursor: pointer;
+    font-size: .85rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .likert-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .likert-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* ── Submit ── */
+  .submit-wrap { text-align: center; margin-top: 2rem; }
+  .btn-submit {
+    background: var(--accent);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    border-radius: .4rem;
+    padding: .9rem 2.8rem;
+    cursor: pointer;
+    transition: background .2s, transform .15s;
+    letter-spacing: .02em;
+  }
+  .btn-submit:hover { background: #235c42; transform: translateY(-2px); }
+  .btn-submit:disabled { background: #aaa; cursor: not-allowed; transform: none; }
+  .required-note { font-size: .8rem; color: var(--muted); margin-top: .8rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">PATH</a>
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / {{ total }} answered</div>
+  </div>
+</header>
+
+<form action="/predict" method="POST" id="surveyForm">
+  {% for q in questions %}
+  <div class="q-block" id="block-{{ q.id }}">
+    <div class="q-meta">
+      <span class="q-num">{{ q.number }}</span>
+      <span class="q-title">{{ q.title }}</span>
+    </div>
+    <div class="q-text">{{ q.question }}</div>
+
+    {% if q.type == 'radio' %}
+    <div class="options">
+      {% for opt in q.options %}
+      <label class="option" for="{{ q.id }}_{{ loop.index }}">
+        <input type="radio" name="{{ q.id }}" id="{{ q.id }}_{{ loop.index }}" value="{{ opt }}" required onchange="onAnswer(this)"/>
+        <span class="option-dot"></span>
+        <span class="option-label">{{ opt }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    {% elif q.type == 'likert' %}
+    <div class="likert-wrap">
+      <div class="likert-labels">
+        <span>Not at all (1)</span>
+        <span>Effortless (10)</span>
+      </div>
+      <div class="likert-track" id="likert-{{ q.id }}">
+        {% for v in range(q.min, q.max + 1) %}
+        <button type="button" class="likert-btn" data-field="{{ q.id }}" data-value="{{ v }}" onclick="setLikert('{{ q.id }}', {{ v }}, this)">{{ v }}</button>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="{{ q.id }}" id="hidden-{{ q.id }}" value="5"/>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <div class="submit-wrap">
+    <button type="submit" class="btn-submit" id="submitBtn">See my career path &rarr;</button>
+    <div class="required-note">All questions are required to generate your prediction.</div>
+  </div>
+</form>
+
+<script>
+  const total = {{ total }};
+  const answered = new Set();
+
+  // Pre-set all likert hidden inputs to 5
+  document.querySelectorAll('.likert-btn[data-value="5"]').forEach(btn => {
+    btn.classList.add('active');
+  });
+
+  // Count likert fields as answered by default
+  document.querySelectorAll('input[type=hidden]').forEach(inp => {
+    if (inp.id.startsWith('hidden-')) answered.add(inp.name);
+  });
+
+  updateProgress();
+
+  function onAnswer(input) {
+    answered.add(input.name);
+    // Highlight selected option
+    document.querySelectorAll(`input[name="${input.name}"]`).forEach(r => {
+      r.closest('.option').classList.toggle('selected', r.checked);
+    });
+    updateProgress();
+  }
+
+  function setLikert(field, value, btn) {
+    document.getElementById('hidden-' + field).value = value;
+    document.querySelectorAll(`[data-field="${field}"]`).forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.value) === value);
+    });
+    answered.add(field);
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const pct = Math.round((answered.size / total) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = answered.size + ' / ' + total + ' answered';
+  }
+</script>
+</body>
+</html>
