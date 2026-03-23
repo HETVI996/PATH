@@ -4,6 +4,7 @@ import pandas as pd
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import load_object
+from src.text_classifier import classify_row
 
 
 class PredictPipeline:
@@ -12,11 +13,13 @@ class PredictPipeline:
 
     def predict(self, features: pd.DataFrame):
         """
-        Returns Top-3 career track predictions with confidence scores.
+        Takes a user input DataFrame (with free-text answers for Q5,Q6,Q7,
+        Q15,Q16,Q18,Q19,Q21,Q23), classifies the free-text into training
+        labels, then returns Top-3 career track predictions with confidence.
 
         Returns
         -------
-        list of dict, e.g.:
+        list of dict:
           [
             {"rank": 1, "track": "Technology & Engineering", "confidence": 68.4},
             {"rank": 2, "track": "Data & Research",          "confidence": 21.3},
@@ -30,15 +33,22 @@ class PredictPipeline:
             model        = load_object("artifacts/model.pkl")
             le           = load_object("artifacts/label_encoder.pkl")
 
+            # Drop ID column if present
             features = features.drop(columns=["Student_ID"], errors="ignore")
 
-            data_scaled = preprocessor.transform(features)
+            # ── Classify free-text answers ────────────────────────────────────
+            # Convert each row to dict, run classifier, rebuild DataFrame
+            classified_rows = [classify_row(row) for row in features.to_dict(orient="records")]
+            features_classified = pd.DataFrame(classified_rows)
 
-            # Top-3 probabilities
-            proba      = model.predict_proba(data_scaled)[0]   # shape: (n_classes,)
-            top3_idx   = proba.argsort()[-3:][::-1]
+            logging.info(f"Classified free-text columns: {features_classified.to_dict(orient='records')[0]}")
+
+            # ── Transform + predict ───────────────────────────────────────────
+            data_scaled = preprocessor.transform(features_classified)
+            proba       = model.predict_proba(data_scaled)[0]
+            top3_idx    = proba.argsort()[-3:][::-1]
             top3_labels = le.inverse_transform(top3_idx)
-            top3_scores = proba[top3_idx] * 100                # convert to %
+            top3_scores = proba[top3_idx] * 100
 
             results = [
                 {
@@ -58,8 +68,14 @@ class PredictPipeline:
 
 class CustomData:
     """
-    Collects user survey responses and converts them to a
-    single-row DataFrame matching the training data schema.
+    Collects all 25 survey responses and converts them to a DataFrame.
+
+    Free-text questions (Q5, Q6, Q7, Q15, Q16, Q18, Q19, Q21, Q23)
+    now accept genuine free text — the text_classifier maps them to
+    training labels automatically inside PredictPipeline.predict().
+
+    Structured questions (Q1–Q4, Q8–Q14, Q17, Q20, Q22) still expect
+    one of the fixed option values exactly as shown in the survey.
     """
 
     def __init__(self,
@@ -67,9 +83,9 @@ class CustomData:
                  Curiosity: str,
                  Flow: str,
                  Childhood: str,
-                 Pride_Project: str,
-                 Hobbies: str,
-                 Energy: str,
+                 Pride_Project: str,       # free text — Q5
+                 Hobbies: str,             # free text — Q6
+                 Energy: str,              # free text — Q7
                  Friend_Help: str,
                  Math: int,
                  Language: int,
@@ -80,14 +96,14 @@ class CustomData:
                  Thinking: str,
                  Structure: str,
                  Decision: str,
-                 Job_Choice: str,
-                 No_Money_Problem: str,
+                 Job_Choice: str,          # free text — Q15
+                 No_Money_Problem: str,    # free text — Q16
                  Fulfillment: str,
-                 Success: str,
+                 Success: str,             # free text — Q18
                  Regret: str,
-                 Ideal_Week: str,
+                 Ideal_Week: str,          # free text — Q21 (Career_Feel in Q19 is internal)
                  Environment: str,
-                 Failure: str):
+                 Failure: str):            # free text — Q23
 
         self.Bookstore        = Bookstore
         self.Curiosity        = Curiosity
@@ -154,14 +170,15 @@ class CustomData:
 # ── Test block ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     try:
+        # Test with genuine free-text answers (not pre-bucketed)
         data = CustomData(
             Bookstore        = "Science/Technology",
             Curiosity        = "Technology",
             Flow             = "Coding",
             Childhood        = "Building",
-            Pride_Project    = "Built a personal website",
-            Hobbies          = "DIY Projects, Robotics",
-            Energy           = "Solving complex problems energizes me",
+            Pride_Project    = "I built a patient management system for a hospital",
+            Hobbies          = "I enjoy going to the gym, playing cricket, and cooking healthy meals",
+            Energy           = "I feel most alive when I solve really hard algorithm problems",
             Friend_Help      = "Technology",
             Math             = 9,
             Language         = 7,
@@ -172,23 +189,29 @@ if __name__ == "__main__":
             Thinking         = "Alone",
             Structure        = "Freedom",
             Decision         = "Head",
-            Job_Choice       = "Chose higher salary for security",
-            No_Money_Problem = "Build sustainable technology",
+            Job_Choice       = "I chose the job with more learning opportunities over higher salary",
+            No_Money_Problem = "I would solve the mental health crisis among young people",
             Fulfillment      = "Create",
-            Success          = "Creating valuable solutions",
+            Success          = "Building products that change how people live",
             Regret           = "Risk",
-            Ideal_Week       = "Deep work with short meetings",
+            Ideal_Week       = "Deep focus coding sessions with short daily standups",
             Environment      = "Startup",
-            Failure          = "Not adapting to change",
+            Failure          = "Starting many projects but never delivering a finished product",
         )
 
         df = data.get_data_as_dataframe()
-        print("Input Data:\n", df.T.to_string())
+        print("Raw input (free text):")
+        print(f"  Pride_Project    : {df['Pride_Project'].values[0]}")
+        print(f"  Hobbies          : {df['Hobbies'].values[0]}")
+        print(f"  Energy           : {df['Energy'].values[0]}")
+        print(f"  Job_Choice       : {df['Job_Choice'].values[0]}")
+        print(f"  No_Money_Problem : {df['No_Money_Problem'].values[0]}")
+        print()
 
         pipeline = PredictPipeline()
         results  = pipeline.predict(df)
 
-        print("\nTop-3 Career Predictions:")
+        print("Top-3 Career Predictions:")
         for r in results:
             print(f"  #{r['rank']}  {r['track']:<35} {r['confidence']}%")
 
