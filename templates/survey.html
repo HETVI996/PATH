@@ -192,12 +192,7 @@
   const total = {{ total }};
   const answered = new Set();
 
-  // Likert starts with no selection — user must actively choose
-document.querySelectorAll('input[type=hidden]').forEach(inp => {
-    if (inp.id.startsWith('hidden-')) {
-        // not pre-answered
-    }
-});
+  // Likert starts with no pre-selection — user must actively click a value
 
   updateProgress();
 
