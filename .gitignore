@@ -233,5 +233,8 @@ env/
 # OS files
 .DS_Store
 
-echo data/ >> .gitignore
+data/
 
+
+
+student_astro_980_profiles_unique.csvdata/ 
