@@ -5,6 +5,8 @@ from src.exception import CustomException
 from src.logger import logging
 from src.utils import load_object
 
+# These columns are passed directly to their individual TF-IDF transformers.
+# Do NOT combine them — the preprocessor now has one TF-IDF per field.
 TFIDF_COLS = [
     "Pride_Project", "Energy", "Job_Choice",
     "No_Money_Problem", "Success", "Ideal_Week", "Failure",
@@ -15,8 +17,8 @@ class PredictPipeline:
     def predict(self, features: pd.DataFrame):
         """
         Returns Top-3 career track predictions with confidence scores.
-        Free-text fields are passed directly — TF-IDF handles them inside
-        the saved preprocessor. No text_classifier needed anymore.
+        Each free-text field is passed directly to its own TF-IDF transformer
+        inside the saved preprocessor — no pre-processing needed here.
         """
         try:
             preprocessor = load_object("artifacts/preprocessor.pkl")
@@ -25,10 +27,7 @@ class PredictPipeline:
 
             features = features.drop(columns=["Student_ID"], errors="ignore")
 
-            # Combine free-text cols → text_combined (mirrors training)
-            features["text_combined"] = features[TFIDF_COLS].astype(str).agg(" ".join, axis=1)
-            features = features.drop(columns=TFIDF_COLS)
-
+            # Pass features directly — preprocessor handles everything
             data_scaled = preprocessor.transform(features)
             proba       = model.predict_proba(data_scaled)[0]
             top3_idx    = proba.argsort()[-3:][::-1]
@@ -47,6 +46,8 @@ class PredictPipeline:
 
 
 class CustomData:
+    """All 25 survey fields. Free-text fields accept genuine open text."""
+
     def __init__(self,
                  Bookstore, Curiosity, Flow, Childhood,
                  Pride_Project, Hobbies, Energy, Friend_Help,
@@ -71,20 +72,32 @@ class CustomData:
     def get_data_as_dataframe(self) -> pd.DataFrame:
         try:
             return pd.DataFrame({
-                "Bookstore":[self.Bookstore],"Curiosity":[self.Curiosity],
-                "Flow":[self.Flow],"Childhood":[self.Childhood],
-                "Pride_Project":[self.Pride_Project],"Hobbies":[self.Hobbies],
-                "Energy":[self.Energy],"Friend_Help":[self.Friend_Help],
-                "Math":[self.Math],"Language":[self.Language],
-                "Creativity":[self.Creativity],"Management":[self.Management],
-                "Group_Role":[self.Group_Role],"Work_Rhythm":[self.Work_Rhythm],
-                "Thinking":[self.Thinking],"Structure":[self.Structure],
-                "Decision":[self.Decision],"Job_Choice":[self.Job_Choice],
-                "No_Money_Problem":[self.No_Money_Problem],
-                "Fulfillment":[self.Fulfillment],"Success":[self.Success],
-                "Career_Feel":[self.Career_Feel],"Regret":[self.Regret],
-                "Ideal_Week":[self.Ideal_Week],"Environment":[self.Environment],
-                "Failure":[self.Failure],
+                "Bookstore":        [self.Bookstore],
+                "Curiosity":        [self.Curiosity],
+                "Flow":             [self.Flow],
+                "Childhood":        [self.Childhood],
+                "Pride_Project":    [self.Pride_Project],
+                "Hobbies":          [self.Hobbies],
+                "Energy":           [self.Energy],
+                "Friend_Help":      [self.Friend_Help],
+                "Math":             [self.Math],
+                "Language":         [self.Language],
+                "Creativity":       [self.Creativity],
+                "Management":       [self.Management],
+                "Group_Role":       [self.Group_Role],
+                "Work_Rhythm":      [self.Work_Rhythm],
+                "Thinking":         [self.Thinking],
+                "Structure":        [self.Structure],
+                "Decision":         [self.Decision],
+                "Job_Choice":       [self.Job_Choice],
+                "No_Money_Problem": [self.No_Money_Problem],
+                "Fulfillment":      [self.Fulfillment],
+                "Success":          [self.Success],
+                "Career_Feel":      [self.Career_Feel],
+                "Regret":           [self.Regret],
+                "Ideal_Week":       [self.Ideal_Week],
+                "Environment":      [self.Environment],
+                "Failure":          [self.Failure],
             })
         except Exception as e:
             raise CustomException(e, sys)
