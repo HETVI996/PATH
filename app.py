@@ -3,6 +3,7 @@ from flask import Flask, render_template, request
 from src.pipeline.predict_pipeline import PredictPipeline, CustomData
 from src.exception import CustomException
 from src.logger import logging
+
 app = Flask(__name__)
 
 # Database is optional — only active if database.py exists
@@ -14,7 +15,7 @@ except ImportError:
     DB_AVAILABLE = False
     def save_response(*args, **kwargs): pass
 
-# ── Survey questions ──────────────────────────────────────────────────────────
+# ── Survey questions (29 total) ───────────────────────────────────────────────
 QUESTIONS = [
     {
         "id":"Bookstore","number":1,"title":"The bookstore test",
@@ -190,6 +191,45 @@ QUESTIONS = [
         "type":"freetext","hint":"e.g. Burning out without impact. I'd recover by seeking mentorship and switching direction.",
         "placeholder":"Describe failure and recovery…",
     },
+    # ── 3 new questions (v2 dataset) ──────────────────────────────────
+    {
+        "id":"Domain_Strength","number":27,"title":"Your strongest domain",
+        "question":"Which academic or professional domain feels most natural to you?",
+        "type":"radio",
+        "options":["STEM — science, technology, engineering, mathematics",
+                   "Arts — visual arts, music, design, performance",
+                   "Clinical — medicine, healthcare, psychology, therapy",
+                   "Business — finance, management, entrepreneurship, strategy",
+                   "Humanities / Law — history, literature, law, policy, philosophy",
+                   "Social — community work, education, social sciences, NGOs"],
+        "values":["STEM","Arts","Clinical","Business","Humanities/Law","Social"],
+    },
+    {
+        "id":"Work_Mode","number":28,"title":"Your work mode",
+        "question":"Which best describes how you'd most like to spend a typical work day?",
+        "type":"radio",
+        "options":["Technical / Build — coding, engineering, building systems or products",
+                   "Lab / Research — experiments, data analysis, academic investigation",
+                   "Creative / Communication — design, writing, content, storytelling",
+                   "Fieldwork / Community — working directly with communities, on-site",
+                   "Hands-on Clinical — direct patient or client care and treatment",
+                   "Operations / Strategy — planning, managing, executing organisational goals",
+                   "People / Community — counselling, mentoring, social support"],
+        "values":["Technical/Build","Lab/Research","Creative/Communication",
+                  "Fieldwork/Community","Hands-on Clinical","Operations/Strategy","People/Community"],
+    },
+    {
+        "id":"Output_Form","number":29,"title":"Your primary output",
+        "question":"At the end of your work, what do you most want to have produced?",
+        "type":"radio",
+        "options":["Artifact / Product — a software, design, system, or physical object",
+                   "Data / Analysis — a report, model, dataset, or research finding",
+                   "Physical / Patient outcome — a healed patient or a trained body",
+                   "Service / Experience — a community served, a student taught, an event delivered",
+                   "Written / Published — an article, policy, legal brief, or story"],
+        "values":["Artifact/Product","Data/Analysis","Physical/Patient",
+                  "Service/Experience","Written/Published"],
+    },
 ]
 
 # ── Career track info for results page ───────────────────────────────────────
@@ -265,8 +305,7 @@ TRACK_INFO = {
 
 @app.route("/")
 def index():
-    track_names = list(TRACK_INFO.keys())
-    return render_template("index.html", tracks=track_names)
+    return render_template("index.html", tracks=list(TRACK_INFO.keys()))
 
 
 @app.route("/survey")
@@ -288,6 +327,7 @@ def predict():
                     return raw
             return raw
 
+        # Map question indices carefully — 0-indexed
         data = CustomData(
             Bookstore        = get_val(QUESTIONS[0]),
             Curiosity        = get_val(QUESTIONS[1]),
@@ -315,18 +355,22 @@ def predict():
             Ideal_Week       = form.get("Ideal_Week", ""),
             Environment      = get_val(QUESTIONS[24]),
             Failure          = form.get("Failure", ""),
+            Domain_Strength  = get_val(QUESTIONS[26]),
+            Work_Mode        = get_val(QUESTIONS[27]),
+            Output_Form      = get_val(QUESTIONS[28]),
         )
 
         df       = data.get_data_as_dataframe()
         pipeline = PredictPipeline()
         results  = pipeline.predict(df)
 
-        # Save to database
-        raw_inputs = {k: v[0] if isinstance(v, list) else v for k, v in form.items()}
-        try:
-            save_response(raw_inputs=raw_inputs, classified_inputs=raw_inputs, predictions=results)
-        except Exception as db_err:
-            logging.warning(f"DB save failed (non-fatal): {db_err}")
+        # Save to database if available
+        if DB_AVAILABLE:
+            raw_inputs = {k: v[0] if isinstance(v, list) else v for k, v in form.items()}
+            try:
+                save_response(raw_inputs=raw_inputs, classified_inputs=raw_inputs, predictions=results)
+            except Exception as db_err:
+                logging.warning(f"DB save failed (non-fatal): {db_err}")
 
         enriched = [{**r, **TRACK_INFO.get(r["track"], {})} for r in results]
         return render_template("result.html", results=enriched)
