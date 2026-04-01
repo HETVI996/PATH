@@ -233,8 +233,9 @@ env/
 # OS files
 .DS_Store
 
+
 data/
 
 
-
+student_astro_17180_v2.csv
 student_astro_980_profiles_unique.csvdata/ 
