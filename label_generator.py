@@ -26,7 +26,7 @@ Output: data/student_profiles_labeled.csv
 import os
 import pandas as pd
 
-INPUT_CSV  = "student_astro_17180_v2.csv"
+INPUT_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "student_astro_17180_v2.csv")
 OUTPUT_CSV = os.path.join("data", "student_profiles_labeled.csv")
 
 TRACKS = [
