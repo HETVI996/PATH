@@ -5,8 +5,6 @@ from src.exception import CustomException
 from src.logger import logging
 from src.utils import load_object
 
-# These columns are passed directly to their individual TF-IDF transformers.
-# Do NOT combine them — the preprocessor now has one TF-IDF per field.
 TFIDF_COLS = [
     "Pride_Project", "Energy", "Job_Choice",
     "No_Money_Problem", "Success", "Ideal_Week", "Failure",
@@ -17,8 +15,7 @@ class PredictPipeline:
     def predict(self, features: pd.DataFrame):
         """
         Returns Top-3 career track predictions with confidence scores.
-        Each free-text field is passed directly to its own TF-IDF transformer
-        inside the saved preprocessor — no pre-processing needed here.
+        All 29 survey fields are passed — preprocessor handles encoding.
         """
         try:
             preprocessor = load_object("artifacts/preprocessor.pkl")
@@ -27,7 +24,6 @@ class PredictPipeline:
 
             features = features.drop(columns=["Student_ID"], errors="ignore")
 
-            # Pass features directly — preprocessor handles everything
             data_scaled = preprocessor.transform(features)
             proba       = model.predict_proba(data_scaled)[0]
             top3_idx    = proba.argsort()[-3:][::-1]
@@ -46,7 +42,7 @@ class PredictPipeline:
 
 
 class CustomData:
-    """All 25 survey fields. Free-text fields accept genuine open text."""
+    """All 29 survey fields including the 3 new v2 columns."""
 
     def __init__(self,
                  Bookstore, Curiosity, Flow, Childhood,
@@ -55,7 +51,8 @@ class CustomData:
                  Group_Role, Work_Rhythm, Thinking, Structure, Decision,
                  Job_Choice, No_Money_Problem, Fulfillment,
                  Success, Career_Feel, Regret, Ideal_Week,
-                 Environment, Failure):
+                 Environment, Failure,
+                 Domain_Strength, Work_Mode, Output_Form):
         self.Bookstore=Bookstore; self.Curiosity=Curiosity; self.Flow=Flow
         self.Childhood=Childhood; self.Pride_Project=Pride_Project
         self.Hobbies=Hobbies; self.Energy=Energy; self.Friend_Help=Friend_Help
@@ -68,6 +65,9 @@ class CustomData:
         self.Career_Feel=Career_Feel; self.Regret=Regret
         self.Ideal_Week=Ideal_Week; self.Environment=Environment
         self.Failure=Failure
+        self.Domain_Strength=Domain_Strength
+        self.Work_Mode=Work_Mode
+        self.Output_Form=Output_Form
 
     def get_data_as_dataframe(self) -> pd.DataFrame:
         try:
@@ -98,6 +98,9 @@ class CustomData:
                 "Ideal_Week":       [self.Ideal_Week],
                 "Environment":      [self.Environment],
                 "Failure":          [self.Failure],
+                "Domain_Strength":  [self.Domain_Strength],
+                "Work_Mode":        [self.Work_Mode],
+                "Output_Form":      [self.Output_Form],
             })
         except Exception as e:
             raise CustomException(e, sys)
