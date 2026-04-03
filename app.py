@@ -11,8 +11,10 @@ try:
     from database import init_db, save_response
     init_db()
     DB_AVAILABLE = True
-except ImportError:
+    print("Database: active — responses will be saved to data/path.db")
+except Exception as e:
     DB_AVAILABLE = False
+    print(f"Database: inactive ({e})")
     def save_response(*args, **kwargs): pass
 
 # ── Survey questions (29 total) ───────────────────────────────────────────────
